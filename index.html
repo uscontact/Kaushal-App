@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>আমার পার্সোনাল অ্যাসিস্ট্যান্ট</title>
+    <style>
+        body { font-family: 'SolaimanLipi', sans-serif; background: #e0f7fa; text-align: center; padding: 20px; }
+        .assistant-box { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-top: 50px; }
+        #status { color: #888; font-size: 14px; margin-bottom: 10px; }
+        #answerText { font-size: 18px; color: #333; min-height: 60px; margin: 20px 0; padding: 10px; border-left: 4px solid #008CBA; background: #f9f9f9; text-align: left; }
+        
+        /* মাইক বাটন ডিজাইন */
+        .mic-btn {
+            background: linear-gradient(145deg, #008CBA, #005f7f);
+            color: white; border: none; padding: 20px; border-radius: 50%; font-size: 30px; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,140,186,0.4); transition: transform 0.2s;
+        }
+        .mic-btn:active { transform: scale(0.9); }
+        .listening { background: #ff4081; animation: pulse 1.5s infinite; }
+        
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 64, 129, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(255, 64, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 64, 129, 0); } }
+    </style>
+</head>
+<body>
+
+<div class="assistant-box">
+    <h3>আপনার স্টাডি অ্যাসিস্ট্যান্ট</h3>
+    <p id="status">মাইক আইকনে ট্যাপ করে কথা বলুন...</p>
+
+    <div id="answerText">আমি আপনার প্রশ্নের জন্য অপেক্ষা করছি...</div>
+
+    <button id="micBtn" class="mic-btn" onclick="startListening()">🎙️</button>
+</div>
+
+<script>
+    // ১. আপনার ডাটাবেস (এখানে আপনি আপনার সব ডাটা যোগ করবেন)
+    const myData = [
+        {
+            keywords: ["সোনার তরী", "সোনার তরি", "রবীন্দ্রনাথ"],
+            answer: "সোনার তরী রবীন্দ্রনাথ ঠাকুরের একটি বিখ্যাত কবিতা। এখানে তিনি বুঝিয়েছেন মানুষের সৃষ্টি বেঁচে থাকে, কিন্তু মানুষ নিজে কালের স্রোতে হারিয়ে যায়।"
+        },
+        {
+            keywords: ["বিদ্রোহী", "নজরুল", "কাজী নজরুল"],
+            answer: "বিদ্রোহী কবিতাটি কাজী নজরুল ইসলামের লেখা। এই কবিতায় তিনি অন্যায়ের বিরুদ্ধে মাথা নত না করার কথা বলেছেন।"
+        },
+        {
+            keywords: ["নিউটনের সূত্র", "গতি সূত্র", "বিজ্ঞান"],
+            answer: "নিউটনের গতির তিনটি সূত্র আছে। প্রথম সূত্রটি হলো, বল প্রয়োগ না করলে স্থির বস্তু স্থির থাকে এবং গতিশীল বস্তু চলতে থাকে।"
+        },
+        {
+            keywords: ["তোমার নাম কি", "তুমি কে"],
+            answer: "আমি আপনার ব্যক্তিগত স্টাডি অ্যাসিস্ট্যান্ট। আমি আপনাকে পড়াশোনায় সাহায্য করতে তৈরি হয়েছি।"
+        }
+    ];
+
+    // স্পিচ রিকগনিশন সেটআপ
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'bn-BD'; // বাংলা ভাষা
+
+    const statusEl = document.getElementById('status');
+    const answerEl = document.getElementById('answerText');
+    const micBtn = document.getElementById('micBtn');
+
+    // ২. শোনা শুরু করা
+    function startListening() {
+        try {
+            recognition.start();
+            statusEl.innerText = "শুনছি...";
+            micBtn.classList.add("listening");
+        } catch (e) {
+            alert("মাইক্রোফোন চালু করা যাচ্ছে না। দয়া করে পারমিশন চেক করুন।");
+        }
+    }
+
+    // ৩. কথা শেষ হলে যা হবে
+    recognition.onresult = function(event) {
+        micBtn.classList.remove("listening");
+        const command = event.results[0][0].transcript.toLowerCase(); // যা বললেন
+        statusEl.innerText = "আপনি বলেছেন: " + command;
+        
+        findAnswer(command);
+    };
+
+    // ৪. ডাটাবেসে উত্তর খোঁজা
+    function findAnswer(voiceText) {
+        let found = false;
+
+        // লুপ চালিয়ে ডাটা খোঁজা হচ্ছে
+        for (let item of myData) {
+            // যদি কিওয়ার্ডগুলোর কোনো একটি আপনার কথার মধ্যে থাকে
+            for (let key of item.keywords) {
+                if (voiceText.includes(key)) {
+                    showAndSpeak(item.answer);
+                    found = true;
+                    break;
+                }
+            }
+            if (found) break;
+        }
+
+        if (!found) {
+            showAndSpeak("দুঃখিত, এই বিষয়ে আমার ডাটাবেসে কোনো তথ্য নেই।");
+        }
+    }
+
+    // ৫. উত্তর দেখানো এবং বলা (সুন্দর ভয়েস লজিক সহ)
+    function showAndSpeak(text) {
+        answerEl.innerText = text;
+        
+        // ভয়েস সেটআপ
+        window.speechSynthesis.cancel(); // আগের কথা থামানো
+        let speech = new SpeechSynthesisUtterance();
+        speech.text = text;
+        speech.lang = "bn-BD";
+        speech.volume = 1;
+        speech.rate = 0.9;  // ধীর গতি (স্বাভাবিক)
+        speech.pitch = 1.1; // সুন্দর টোন
+
+        // গুগল ভয়েস খোঁজা
+        let voices = window.speechSynthesis.getVoices();
+        let bestVoice = voices.find(v => v.lang.includes('bn') && v.name.includes('Google'));
+        if (bestVoice) speech.voice = bestVoice;
+
+        window.speechSynthesis.speak(speech);
+    }
+    
+    // পেজ লোড হলে ভয়েস রেডি রাখা
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+
+</script>
+
+</body>
+</html>
